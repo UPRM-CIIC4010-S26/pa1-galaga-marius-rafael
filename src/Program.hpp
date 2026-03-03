@@ -19,6 +19,8 @@ class Program {
         int delay = 0;
         int lives = 3;
         int pauseFrames = 0;
+        int score = 0;
+        int bonusLivesThreshold = 1000;
 
         bool startup = true;
         bool paused = false;
@@ -31,11 +33,12 @@ class Program {
         void Draw();
         void ManageEnemyRespawns();
         void DrawStartup();
+        void DrawScore(); //Shows score on screen
+        void DrawLives(); //Shows the amount of lives the player currently has
         void DrawPauseScreen();
         void DrawGameOver();
         void KeyInputs();
         void PlayerReset();
         void Reset();
-          
         ~Program() {}
 };

@@ -45,7 +45,7 @@ void Program::Update() {
     pauseFrames = std::max(pauseFrames - 1, 0);
 
     if (!startup && !paused && !gameOver && pauseFrames <= 0) {
-        Enemy::ManageEnemies(player->hitBox);
+        Enemy::ManageEnemies(player->hitBox, score);
         StdEnemy::attackReset();
         ManageEnemyRespawns();
         player->update();
@@ -70,10 +70,19 @@ void Program::Update() {
 
         }
 
-        if (lives <= 0 && pauseFrames <= 0) gameOver = true;
+        if (lives <= 0 && pauseFrames <= 0){
+            gameOver = true;
+        } else if(lives <= 5 && score >= bonusLivesThreshold){
+            lives++; //Extra lives gained
+            bonusLivesThreshold += 1000; //Sets a milestone, every 1000pts gained it should increase the lives by 1 up to a max of 5
+        } else if(lives > 5){
+            lives = 5; //Establishes a hardcap in case lives go over 5. If they do, the extra lives gained must be lost in order for it to display the right amount
+        }
         Projectile::CleanProjectiles();
         Projectile::ProjectileCollision();
     }
+    
+
 }
 
 void Program::Draw() {
@@ -94,6 +103,8 @@ void Program::Draw() {
     if (startup) DrawStartup();
     if (paused) DrawPauseScreen();
     if (gameOver) DrawGameOver();
+    DrawScore();
+    DrawLives();
 }
 
 void Program::ManageEnemyRespawns() {
@@ -151,6 +162,16 @@ void Program::DrawPauseScreen() {
     DrawText("Press Enter", (GetScreenWidth() / 2) - 75, GetScreenHeight() / 2, 24, GRAY);
 }
 
+void Program::DrawScore() { // Shows score on upper left corner of screen
+   std::string text = "Score: " + std::to_string(score);
+   DrawText(text.c_str(), 20, 20, 30, WHITE);
+}
+
+void Program::DrawLives() { // Shows lives on upper right corner of the screen
+   std::string text = "Lives: " + std::to_string(lives);
+   DrawText(text.c_str(), 850, 20, 30, WHITE);
+}
+
 void Program::DrawGameOver() {
     DrawRectangle(0, 0, (float)GetScreenWidth(), (float)GetScreenHeight(), Color{0, 0, 0, 125});
     DrawText("Game Over", (GetScreenWidth() / 2) - 380, 50, 144, WHITE);
@@ -165,6 +186,7 @@ void Program::KeyInputs() {
     
     if (gameOver && IsKeyPressed(KEY_ENTER)) {
         gameOver = false;
+        score = 0;
         Reset();
     }
 
@@ -173,8 +195,13 @@ void Program::KeyInputs() {
     }
 
     if (!startup && !paused && !gameOver && pauseFrames <= 0) player->keyInputs();
+
+    if(IsKeyPressed('K')){ //Phase two (if the key "K" is pressed it should increase score by 500)
+        score += 500;
+    }
    
 }
+
 
 void Program::PlayerReset() {
     Animation::animations.push_back(

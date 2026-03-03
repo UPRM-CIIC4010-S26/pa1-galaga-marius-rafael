@@ -8,16 +8,19 @@ class SpEnemy : public Enemy {
         int specialCooldown = GetRandomValue(1380, 3600);
         bool stop = false;
 
+
     public:
         SpEnemy(float x, float y) : Enemy(x, y) { 
             this->cooldown = GetRandomValue(300, 1380); 
             this->health = 4;
+            scoreValue = 300; //Score value of this enemy
         }
 
         SpEnemy(float x, float y, bool newSpawn) : Enemy(x, y){
             this->cooldown = GetRandomValue(360, 1380);
             this->health = 4;
             this->spawning = newSpawn;
+            scoreValue = 300; //Score value of this enemy
         }
 
         void draw() override;
