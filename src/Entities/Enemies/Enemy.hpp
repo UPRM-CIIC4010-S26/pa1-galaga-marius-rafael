@@ -57,6 +57,7 @@ class Enemy {
                         if (p2.ID != 1 && HitBox::Collision(p.second->hitBox, p2.getHitBox())) {
                             p.second->health--;
                             p2.del = true;
+                            PlaySound(SoundManager::hit); //Plays sound(hit.mp3) when enemy is hit.
                         }
                     }
 
@@ -66,6 +67,7 @@ class Enemy {
                         );
                         score += p.second->getScoreValue();
                         p.second = nullptr;
+                         PlaySound(SoundManager::dead); //Plays sound(dead.mp3) when enemy is dead.
                     }
                 }
             }
