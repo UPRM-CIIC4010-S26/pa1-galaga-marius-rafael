@@ -1,4 +1,15 @@
 #include "Program.hpp"
+#include <vector>
+
+struct Star {
+    float x;
+    float y;
+    float speed;
+    int size;
+};
+
+static std::vector<Star> stars;
+static bool starsInitialized = false;
 
 Program::Program() {
     Background::sideWalls = std::pair<HitBox, HitBox>{ 
@@ -35,13 +46,51 @@ Program::Program() {
             new StdEnemy(x, y)
         });
     }
+
+    // Bonus: initialize animated stars
+    if (!starsInitialized) {
+        for (int i = 0; i < 80; i++) {
+            stars.push_back(Star{
+                (float)GetRandomValue(0, GetScreenWidth()),
+                (float)GetRandomValue(0, GetScreenHeight()),
+                (float)GetRandomValue(1, 4),
+                GetRandomValue(1, 3)
+            });
+        }
+        starsInitialized = true;
+    }
+}
+
+void Program::UpdateStars() {
+    for (Star& s : stars) {
+        s.y += s.speed;
+
+        if (s.y > GetScreenHeight()) {
+            s.y = 0;
+            s.x = (float)GetRandomValue(0, GetScreenWidth());
+            s.speed = (float)GetRandomValue(1, 4);
+            s.size = GetRandomValue(1, 3);
+        }
+    }
+}
+
+void Program::DrawStars() {
+    for (const Star& s : stars) {
+        DrawCircle((int)s.x, (int)s.y, (float)s.size, WHITE);
+    }
 }
 
 void Program::Update() {
+    UpdateStars();
+
     for (Animation& a : Animation::animations) a.update();
     for (int i = 0; i < Animation::animations.size(); i++) {
-        if (Animation::animations[i].done) Animation::animations.erase(Animation::animations.begin() + i);
+        if (Animation::animations[i].done) {
+            Animation::animations.erase(Animation::animations.begin() + i);
+            i--;
+        }
     }
+
     pauseFrames = std::max(pauseFrames - 1, 0);
 
     if (!startup && !paused && !gameOver && pauseFrames <= 0) {
@@ -53,7 +102,7 @@ void Program::Update() {
         for (std::pair<std::pair<float, float>, Enemy*> p : Enemy::enemies) {
             if (p.second && HitBox::Collision(player->hitBox, p.second->hitBox)) {
                 Animation::animations.push_back(
-                    Animation(player->position.first, player->position.second, 16, 0, 33, 34, 30 ,30, 3, ImageManager::SpriteSheet)
+                    Animation(player->position.first, player->position.second, 16, 0, 33, 34, 30, 30, 3, ImageManager::SpriteSheet)
                 );
 
                 PlaySound(SoundManager::gameOver);
@@ -75,13 +124,13 @@ void Program::Update() {
             }
         }
 
-        if (lives <= 0 && pauseFrames <= 0){
+        if (lives <= 0 && pauseFrames <= 0) {
             gameOver = true;
-        } else if(lives <= 5 && score >= bonusLivesThreshold){
-            lives++; // Extra life every 1000 score
+        } else if (lives <= 5 && score >= bonusLivesThreshold) {
+            lives++;
             bonusLivesThreshold += 1000;
-        } else if(lives > 5){
-            lives = 5; // Hard cap of 5 lives
+        } else if (lives > 5) {
+            lives = 5;
         }
 
         Projectile::CleanProjectiles();
@@ -91,17 +140,26 @@ void Program::Update() {
 
 void Program::Draw() {
     background.Draw();
+    DrawStars();
+
     if (pauseFrames <= 0 && !gameOver) player->draw();
     for (Animation& a : Animation::animations) a.draw();
 
     for (int i = 0; i < lives; i++) {
-         DrawTexturePro(ImageManager::SpriteSheet, Rectangle{0, 0, 17, 18}, 
-                   Rectangle{10.0f + i * 30, GetScreenHeight() - 30.0f, 20, 20}, 
-                   Vector2{0, 0}, 0, WHITE);
+        DrawTexturePro(
+            ImageManager::SpriteSheet,
+            Rectangle{0, 0, 17, 18}, 
+            Rectangle{10.0f + i * 30, GetScreenHeight() - 30.0f, 20, 20}, 
+            Vector2{0, 0},
+            0,
+            WHITE
+        );
     }
 
     for (Projectile p : Projectile::projectiles) p.draw();
-    for (std::pair<std::pair<float, float>, Enemy*>& p : Enemy::enemies) if (p.second) p.second->draw();
+    for (std::pair<std::pair<float, float>, Enemy*>& p : Enemy::enemies) {
+        if (p.second) p.second->draw();
+    }
 
     if (startup) DrawStartup();
     if (paused) DrawPauseScreen();
@@ -113,8 +171,6 @@ void Program::Draw() {
 void Program::ManageEnemyRespawns() {
     delay = std::max(delay - 1, 0);
 
-    // Phase 2: respawn cooldown decreases faster as score increases,
-    // but has a cap so enemies do not respawn too quickly.
     int cooldownSpeed = 1 + (score / 1000);
     if (cooldownSpeed > 6) {
         cooldownSpeed = 6;
@@ -145,7 +201,7 @@ void Program::ManageEnemyRespawns() {
         }
     }
 
-    if(respawns >= 4) {
+    if (respawns >= 4) {
         count = 4;
         respawns = 0;
     }
@@ -173,14 +229,14 @@ void Program::DrawPauseScreen() {
     DrawText("Press Enter", (GetScreenWidth() / 2) - 75, GetScreenHeight() / 2, 24, GRAY);
 }
 
-void Program::DrawScore() { // Shows score on upper left corner of screen
-   std::string text = "Score: " + std::to_string(score);
-   DrawText(text.c_str(), 20, 20, 30, WHITE);
+void Program::DrawScore() {
+    std::string text = "Score: " + std::to_string(score);
+    DrawText(text.c_str(), 20, 20, 30, WHITE);
 }
 
-void Program::DrawLives() { // Shows lives on upper right corner of the screen
-   std::string text = "Lives: " + std::to_string(lives);
-   DrawText(text.c_str(), 850, 20, 30, WHITE);
+void Program::DrawLives() {
+    std::string text = "Lives: " + std::to_string(lives);
+    DrawText(text.c_str(), 850, 20, 30, WHITE);
 }
 
 void Program::DrawGameOver() {
@@ -207,14 +263,14 @@ void Program::KeyInputs() {
 
     if (!startup && !paused && !gameOver && pauseFrames <= 0) player->keyInputs();
 
-    if(IsKeyPressed('K')){ // Phase 2 test key
+    if (IsKeyPressed('K')) {
         score += 500;
     }
 }
 
 void Program::PlayerReset() {
     Animation::animations.push_back(
-        Animation(player->position.first, player->position.second, 16, 0, 33, 34, 30 ,30, 3, ImageManager::SpriteSheet)
+        Animation(player->position.first, player->position.second, 16, 0, 33, 34, 30, 30, 3, ImageManager::SpriteSheet)
     );
 
     PlaySound(SoundManager::gameOver);
@@ -233,4 +289,5 @@ void Program::Reset() {
     count = 0;
     delay = 0;
     lives = 3;
+    bonusLivesThreshold = 1000;
 }
