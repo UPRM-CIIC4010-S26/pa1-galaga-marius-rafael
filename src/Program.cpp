@@ -66,23 +66,27 @@ void Program::Update() {
         }
 
         for (Projectile& p : Projectile::projectiles) { 
-            p.update(); 
+            p.update();
 
+            // Phase 1: enemy projectile hits player
+            if (p.id != 0 && HitBox::Collision(player->hitBox, p.hitBox)) {
+                PlayerReset();
+                break;
+            }
         }
 
         if (lives <= 0 && pauseFrames <= 0){
             gameOver = true;
         } else if(lives <= 5 && score >= bonusLivesThreshold){
-            lives++; //Extra lives gained
-            bonusLivesThreshold += 1000; //Sets a milestone, every 1000pts gained it should increase the lives by 1 up to a max of 5
+            lives++; // Extra life every 1000 score
+            bonusLivesThreshold += 1000;
         } else if(lives > 5){
-            lives = 5; //Establishes a hardcap in case lives go over 5. If they do, the extra lives gained must be lost in order for it to display the right amount
+            lives = 5; // Hard cap of 5 lives
         }
+
         Projectile::CleanProjectiles();
         Projectile::ProjectileCollision();
     }
-    
-
 }
 
 void Program::Draw() {
@@ -95,7 +99,6 @@ void Program::Draw() {
                    Rectangle{10.0f + i * 30, GetScreenHeight() - 30.0f, 20, 20}, 
                    Vector2{0, 0}, 0, WHITE);
     }
-
 
     for (Projectile p : Projectile::projectiles) p.draw();
     for (std::pair<std::pair<float, float>, Enemy*>& p : Enemy::enemies) if (p.second) p.second->draw();
@@ -110,16 +113,24 @@ void Program::Draw() {
 void Program::ManageEnemyRespawns() {
     delay = std::max(delay - 1, 0);
 
-    respawnCooldown -= 1;
+    // Phase 2: respawn cooldown decreases faster as score increases,
+    // but has a cap so enemies do not respawn too quickly.
+    int cooldownSpeed = 1 + (score / 1000);
+    if (cooldownSpeed > 6) {
+        cooldownSpeed = 6;
+    }
+
+    respawnCooldown -= cooldownSpeed;
+
     if (respawnCooldown <= 0) {
         respawnCooldown = 1080;
+
         for (std::pair<std::pair<float, float>, Enemy*>& p : Enemy::enemies) {
             if (!p.second && p.first.second != 150) {
                 int eType = GetRandomValue(1, 3);
 
                 if (eType == 1) {
                     p.second = new StEnemy(GetScreenWidth() / 2 - 15, 0, true);
-                    respawnCooldown /= 2;
                 } else {
                     p.second = new StdEnemy(GetScreenWidth() / 2 - 15, 0, true);
                 }
@@ -196,12 +207,10 @@ void Program::KeyInputs() {
 
     if (!startup && !paused && !gameOver && pauseFrames <= 0) player->keyInputs();
 
-    if(IsKeyPressed('K')){ //Phase two (if the key "K" is pressed it should increase score by 500)
+    if(IsKeyPressed('K')){ // Phase 2 test key
         score += 500;
     }
-   
 }
-
 
 void Program::PlayerReset() {
     Animation::animations.push_back(

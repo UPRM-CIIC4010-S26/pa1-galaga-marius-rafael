@@ -7,11 +7,20 @@ class DyEnemy : public Enemy {
         float aimAngle = 225;
         bool loop = false;
 
+        Rectangle spriteRect;
+
     public:
         DyEnemy(float x, float y) : Enemy(x, y) { 
             this->cooldown = GetRandomValue(90, 300);
             this->health = 1; 
-            scoreValue = 400; //Score value of this enemy
+            scoreValue = 400; 
+
+            // Randomly choose one of two textures
+            if (GetRandomValue(0, 1) == 0) {
+                spriteRect = Rectangle{2, 128, 13, 14};
+            } else {
+                spriteRect = Rectangle{2, 147, 13, 13};
+            }
         }
 
         void draw() override;
