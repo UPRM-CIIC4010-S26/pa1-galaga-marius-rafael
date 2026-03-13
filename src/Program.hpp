@@ -25,6 +25,18 @@ class Program {
         bool startup = true;
         bool paused = false;
         bool gameOver = false;
+        struct Star {
+        float x;
+        float y;
+        float speed;
+        int size;
+    };
+
+    std::vector<Star> stars;
+    bool starsInitialized = false;
+
+    void UpdateStars();
+    void DrawStars();
 
     public:
         Program();
