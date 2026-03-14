@@ -118,7 +118,7 @@ void Program::Update() {
             p.update();
 
             // Phase 1: enemy projectile hits player
-            if (p.id != 0 && HitBox::Collision(player->hitBox, p.hitBox)) {
+            if (p.ID != 0 && HitBox::Collision(player->hitBox, p.getHitBox())) {
                 PlayerReset();
                 break;
             }
@@ -126,11 +126,14 @@ void Program::Update() {
 
         if (lives <= 0 && pauseFrames <= 0) {
             gameOver = true;
+            StopSound(SoundManager::BGM);
         } else if (lives <= 5 && score >= bonusLivesThreshold) {
             lives++;
             bonusLivesThreshold += 1000;
+            PlaySound(SoundManager::lifeUp);
         } else if (lives > 5) {
             lives = 5;
+            StopSound(SoundManager::lifeUp);
         }
 
         Projectile::CleanProjectiles();
@@ -170,17 +173,17 @@ void Program::Draw() {
 
 void Program::ManageEnemyRespawns() {
     delay = std::max(delay - 1, 0);
-
-    int cooldownSpeed = 1 + (score / 1000);
-    if (cooldownSpeed > 6) {
-        cooldownSpeed = 6;
-    }
-
-    respawnCooldown -= cooldownSpeed;
-
-    if (respawnCooldown <= 0) {
-        respawnCooldown = 1080;
-
+       respawnCooldown -= 1;
+//Difficulty based on score
+    if (respawnCooldown <= 0)
+    {
+        if(score <= 1000){
+              respawnCooldown = 1080;
+        } else if (score <= 2500){
+                 respawnCooldown = 400;
+        } else {
+                   respawnCooldown = 150;
+        }
         for (std::pair<std::pair<float, float>, Enemy*>& p : Enemy::enemies) {
             if (!p.second && p.first.second != 150) {
                 int eType = GetRandomValue(1, 3);
@@ -252,6 +255,7 @@ void Program::KeyInputs() {
     if (IsKeyPressed('H')) HitBox::drawHitbox = !HitBox::drawHitbox;
     
     if (gameOver && IsKeyPressed(KEY_ENTER)) {
+        PlaySound(SoundManager::BGM);//BGM Addition
         gameOver = false;
         score = 0;
         Reset();
@@ -259,6 +263,7 @@ void Program::KeyInputs() {
 
     if (startup && IsKeyPressed(KEY_ENTER)) {
         startup = false;
+        PlaySound(SoundManager::BGM);//BGM Addition
     }
 
     if (!startup && !paused && !gameOver && pauseFrames <= 0) player->keyInputs();
@@ -290,4 +295,34 @@ void Program::Reset() {
     delay = 0;
     lives = 3;
     bonusLivesThreshold = 1000;
+//Enemy Respawn after Game Over
+     for (int i = 0; i < 30; i++) {
+        float x;  
+        float y;
+        if(i < 10){
+            x = 250 + (i * 50);
+            y = 200;
+        } else if(i < 20){
+            x = 250 + ((i - 10) * 50);
+            y = 250;
+        } else {
+            x = 250 + ((i - 20) * 50);
+            y = 300;
+        }
+
+        Enemy::enemies.push_back(std::pair<std::pair<float, float>, Enemy*> {
+            std::pair<float, float>{x, y}, 
+            new StdEnemy(x, y)
+        });
+    }
+
+       Enemy::enemies.push_back(std::pair<std::pair<float, float>, Enemy*> {
+            std::pair<float, float>{350, 150}, 
+            new SpEnemy(350, 150)
+        });
+
+    Enemy::enemies.push_back(std::pair<std::pair<float, float>, Enemy*> {
+            std::pair<float, float>{600, 150}, 
+            new SpEnemy(600, 150)
+        });
 }
